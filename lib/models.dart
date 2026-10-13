@@ -10,6 +10,7 @@ String _generateUniqueId() =>
 class Vehicle {
   String id;
   String type; // 'Car' or 'Motorcycle'
+  String nickname;
   String year;
   String make;
   String model;
@@ -25,6 +26,7 @@ class Vehicle {
   Vehicle({
     String? id,
     this.type = 'Car',
+    this.nickname = '',
     this.year = '',
     this.make = '',
     this.model = '',
@@ -69,9 +71,20 @@ class Vehicle {
   }
 
   String get displayName {
+    if (nickname.trim().isNotEmpty) {
+      return nickname.trim();
+    }
     final name = '$year $make $model'.trim();
     if (name.isEmpty) {
       return isMotorcycle ? 'My Motorcycle' : 'My Awesome Ride';
+    }
+    return name;
+  }
+
+  String get ymm {
+    final name = '$year $make $model'.trim();
+    if (name.isEmpty) {
+      return isMotorcycle ? 'Motorcycle' : 'Vehicle';
     }
     return name;
   }
@@ -80,6 +93,7 @@ class Vehicle {
     return {
       'id': id,
       'type': type,
+      'nickname': nickname,
       'year': year,
       'make': make,
       'model': model,
@@ -102,6 +116,7 @@ class Vehicle {
     return Vehicle(
       id: map['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
       type: map['type'] ?? 'Car',
+      nickname: map['nickname'] ?? '',
       year: map['year'] ?? '',
       make: map['make'] ?? '',
       model: map['model'] ?? '',

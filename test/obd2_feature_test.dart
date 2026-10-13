@@ -183,5 +183,74 @@ void main() {
       expect(service.isConnected, isFalse);
       service.dispose();
     });
+
+    test('Real-World ELM327 DTC Decoding correctly handles CAN frames, padding, and multi-line responses', () {
+      final service = Obd2Service();
+
+      // Real CAN single-frame response with 1 DTC (P0171) and 00 00 padding
+      final singleCan = service.decodeDtcResponseForTesting('43 01 01 71 00 00 00 00');
+      expect(singleCan, equals(['P0171']));
+
+      // Compact response without spaces
+      final compactCan = service.decodeDtcResponseForTesting('4301017100000000');
+      expect(compactCan, equals(['P0171']));
+
+      // Real CAN single-frame with 2 DTCs (P0171, P0301)
+      final twoCodes = service.decodeDtcResponseForTesting('43 02 01 71 03 01 00 00');
+      expect(twoCodes, equals(['P0171', 'P0301']));
+
+      // Multi-line CAN frame (ISO 15765-2) with frame index prefixes
+      const multiFrame = '0: 43 03 01 71 03 01\r\n1: 04 20 00 00 00 00';
+      final multiResult = service.decodeDtcResponseForTesting(multiFrame);
+      expect(multiResult, equals(['P0171', 'P0301', 'P0420']));
+
+      // Response with CAN ECU ID prefix (e.g. 7E8)
+      final ecuHeader = service.decodeDtcResponseForTesting('7E8 06 43 01 01 71 00 00');
+      expect(ecuHeader, equals(['P0171']));
+
+      // Mode 07 Pending Code
+      final mode07 = service.decodeDtcResponseForTesting('47 01 04 20 00 00');
+      expect(mode07, equals(['P0420']));
+
+      // Mode 0A Permanent Code
+      final mode0A = service.decodeDtcResponseForTesting('4A 01 01 71 00 00');
+      expect(mode0A, equals(['P0171']));
+
+      // Non-powertrain codes (Chassis C0035, Network U0100)
+      final chassisAndNetwork = service.decodeDtcResponseForTesting('43 02 40 35 C1 00 00 00');
+      expect(chassisAndNetwork, equals(['C0035', 'U0100']));
+
+      // No DTCs reported
+      expect(service.decodeDtcResponseForTesting('43 00'), isEmpty);
+      expect(service.decodeDtcResponseForTesting('43 00 00 00 00 00 00 00'), isEmpty);
+      expect(service.decodeDtcResponseForTesting('NO DATA'), isEmpty);
+      expect(service.decodeDtcResponseForTesting('UNABLE TO CONNECT'), isEmpty);
+
+      service.dispose();
+    });
+
+    test('Telemetry PID parsers extract values accurately from CAN-padded strings', () {
+      final service = Obd2Service();
+
+      // RPM: 41 0C 1A 80 -> ((0x1A * 256) + 0x80) / 4 = 1696.0 RPM
+      expect(service.parseRpmForTesting('41 0C 1A 80'), closeTo(1696.0, 0.1));
+      expect(service.parseRpmForTesting('410C1A8000000000'), closeTo(1696.0, 0.1));
+
+      // Speed: 41 0D 3C -> 60 km/h
+      expect(service.parseSpeedForTesting('41 0D 3C'), 60.0);
+      expect(service.parseSpeedForTesting('410D3C00000000'), 60.0);
+
+      // Coolant: 41 05 7B -> 123 - 40 = 83 C
+      expect(service.parseTemperatureForTesting('41 05 7B', '4105'), 83.0);
+
+      // Engine Load: 41 04 80 -> 128 * 100 / 255 = ~50.2%
+      expect(service.parseLoadForTesting('41 04 80 00 00 00'), closeTo(50.2, 0.2));
+
+      // Battery Voltage: AT RV -> 14.2V
+      expect(service.parseVoltageForTesting('14.2V'), 14.2);
+      expect(service.parseVoltageForTesting('AT RV 13.8V'), 13.8);
+
+      service.dispose();
+    });
   });
 }

@@ -137,6 +137,19 @@ class DiagnosticReportDialog extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                              const SizedBox(width: 8),
+                              InkWell(
+                                onTap: () => Navigator.pop(context),
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.06),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.close, size: 16, color: Colors.white70),
+                                ),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 3),
@@ -634,7 +647,7 @@ class DiagnosticReportDialog extends StatelessWidget {
 
               // Actions Footer
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.02),
                   borderRadius:
@@ -647,12 +660,23 @@ class DiagnosticReportDialog extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.share, size: 16),
-                      label: const Text('Share'),
+                    IconButton(
+                      tooltip: 'Share Report',
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white.withValues(alpha: 0.05),
+                        foregroundColor: Colors.white70,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.08),
+                          ),
+                        ),
+                        padding: const EdgeInsets.all(10),
+                      ),
+                      icon: const Icon(Icons.share_outlined, size: 18),
                       onPressed: _shareReport,
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     if (onDiscussWithAi != null)
                       Expanded(
                         child: ElevatedButton.icon(
@@ -660,11 +684,23 @@ class DiagnosticReportDialog extends StatelessWidget {
                             backgroundColor: accent,
                             foregroundColor: Colors.black,
                             elevation: 0,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                          label: const Text(
-                            'Discuss with AI',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Discuss with AI',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                            ),
                           ),
                           onPressed: () {
                             Navigator.pop(context);
@@ -674,8 +710,11 @@ class DiagnosticReportDialog extends StatelessWidget {
                       )
                     else
                       const Spacer(),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white70,
+                      ),
                       onPressed: () => Navigator.pop(context),
                       child: const Text('Close'),
                     ),

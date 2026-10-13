@@ -38,6 +38,9 @@ class _Obd2DeviceDialogState extends State<Obd2DeviceDialog> {
       setState(() {
         _pairedDevices = devices;
         _isLoadingPaired = false;
+        if (devices.isEmpty && widget.obd2service.lastError != null) {
+          _errorMessage = widget.obd2service.lastError;
+        }
       });
     }
   }
@@ -63,7 +66,13 @@ class _Obd2DeviceDialogState extends State<Obd2DeviceDialog> {
       },
       onDone: () {
         if (mounted) {
-          setState(() => _isDiscovering = false);
+          setState(() {
+            _isDiscovering = false;
+            if (widget.obd2service.lastError != null &&
+                _discoveredDevices.isEmpty) {
+              _errorMessage = widget.obd2service.lastError;
+            }
+          });
         }
       },
       onError: (err) {
@@ -223,35 +232,77 @@ class _Obd2DeviceDialogState extends State<Obd2DeviceDialog> {
                               (device) => _buildDeviceTile(device, accent),
                             ),
                           ],
+                          if (_isDiscovering) ...[
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              child: Center(
+                                child: Column(
+                                  children: [
+                                    SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: accent,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    const Text(
+                                      'Searching for nearby Bluetooth devices...',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                           if (_pairedDevices.isEmpty &&
                               _discoveredDevices.isEmpty &&
                               !_isDiscovering) ...[
                             Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 24),
+                              padding: const EdgeInsets.symmetric(vertical: 20),
                               child: Center(
                                 child: Column(
                                   children: [
                                     Icon(
                                       Icons.bluetooth_disabled,
                                       size: 40,
-                                      color: Colors.white.withValues(alpha: 0.3),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.3),
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
                                       'No paired Bluetooth adapters found',
                                       style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.5),
+                                        color:
+                                            Colors.white.withValues(alpha: 0.5),
                                         fontSize: 13,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Pair your adapter in Android Bluetooth Settings first',
+                                      'Pair your adapter in Android Bluetooth Settings first, then tap Refresh',
                                       style: TextStyle(
-                                        color: Colors.white.withValues(alpha: 0.35),
+                                        color: Colors.white
+                                            .withValues(alpha: 0.35),
                                         fontSize: 11,
                                       ),
                                       textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ElevatedButton.icon(
+                                      icon: const Icon(Icons.refresh, size: 16),
+                                      label: const Text('Refresh Paired List'),
+                                      style: ElevatedButton.styleFrom(
+                                        visualDensity: VisualDensity.compact,
+                                        backgroundColor: accent,
+                                        foregroundColor: Colors.black,
+                                      ),
+                                      onPressed: _loadPairedDevices,
                                     ),
                                   ],
                                 ),
@@ -264,6 +315,7 @@ class _Obd2DeviceDialogState extends State<Obd2DeviceDialog> {
             ],
           ),
         ),
+        actionsAlignment: MainAxisAlignment.spaceBetween,
         actions: [
           TextButton.icon(
             icon: const Icon(Icons.play_circle_outline, size: 18),
@@ -273,23 +325,30 @@ class _Obd2DeviceDialogState extends State<Obd2DeviceDialog> {
             ),
             onPressed: _activateDemoMode,
           ),
-          const Spacer(),
-          if (!_isDiscovering)
-            OutlinedButton.icon(
-              icon: const Icon(Icons.refresh, size: 16),
-              label: const Text('Scan Nearby'),
-              onPressed: _startDiscovery,
-            )
-          else
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          const SizedBox(width: 8),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!_isDiscovering)
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Scan Nearby'),
+                  onPressed: _startDiscovery,
+                )
+              else
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+            ],
           ),
         ],
       ),

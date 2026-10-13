@@ -164,8 +164,9 @@ class _AssistantPageState extends State<AssistantPage> {
     _scrollToBottom();
 
     final vehicle = widget.appState.selectedVehicle;
+    final nicknamePart = vehicle.nickname.isNotEmpty ? ' (Nickname: "${vehicle.nickname}")' : '';
     final vehicleContext =
-        'Selected Vehicle: ${vehicle.type} - ${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.trim}, Color: ${vehicle.color}. Installed Mods: ${vehicle.mods.isEmpty ? "Stock" : vehicle.mods}.';
+        'Selected Vehicle: ${vehicle.type} - ${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.trim}$nicknamePart, Color: ${vehicle.color}. Installed Mods: ${vehicle.mods.isEmpty ? "Stock" : vehicle.mods}.';
     final prompt = '$vehicleContext\n\nUser Question: $text';
 
     String fullResponse = '';

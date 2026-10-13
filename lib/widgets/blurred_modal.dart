@@ -20,10 +20,12 @@ class BlurredModalSheet extends StatelessWidget {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => Navigator.of(context).pop(),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.25),
+            child: ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.35),
+                ),
               ),
             ),
           ),
@@ -63,10 +65,12 @@ class BlurredDialog extends StatelessWidget {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: dismissible ? () => Navigator.of(context).pop() : null,
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.25),
+            child: ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.35),
+                ),
               ),
             ),
           ),

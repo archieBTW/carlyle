@@ -700,7 +700,21 @@ class _VehicleCarouselCardState extends State<_VehicleCarouselCard>
                   ],
                 ],
               ),
-              if (vehicle.trim.isNotEmpty)
+              if (vehicle.nickname.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Text(
+                    '${vehicle.ymm}${vehicle.trim.isNotEmpty ? " • ${vehicle.trim}" : ""}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white70 : const Color(0xFF475569),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                )
+              else if (vehicle.trim.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
@@ -819,6 +833,7 @@ class _VehicleFormModal extends StatefulWidget {
 
 class _VehicleFormModalState extends State<_VehicleFormModal> {
   late String _type;
+  late TextEditingController _nicknameController;
   late TextEditingController _yearController;
   late TextEditingController _makeController;
   late TextEditingController _modelController;
@@ -832,6 +847,7 @@ class _VehicleFormModalState extends State<_VehicleFormModal> {
     super.initState();
     final v = widget.vehicleToEdit;
     _type = v?.type ?? 'Car';
+    _nicknameController = TextEditingController(text: v?.nickname ?? '');
     _yearController = TextEditingController(text: v?.year ?? '');
     _makeController = TextEditingController(text: v?.make ?? '');
     _modelController = TextEditingController(text: v?.model ?? '');
@@ -843,6 +859,7 @@ class _VehicleFormModalState extends State<_VehicleFormModal> {
 
   @override
   void dispose() {
+    _nicknameController.dispose();
     _yearController.dispose();
     _makeController.dispose();
     _modelController.dispose();
@@ -880,6 +897,7 @@ class _VehicleFormModalState extends State<_VehicleFormModal> {
     final vehicle = Vehicle(
       id: widget.vehicleToEdit?.id,
       type: _type,
+      nickname: _nicknameController.text.trim(),
       year: _yearController.text.trim(),
       make: _makeController.text.trim(),
       model: _modelController.text.trim(),
@@ -1037,6 +1055,12 @@ class _VehicleFormModalState extends State<_VehicleFormModal> {
                     _buildTextField(_trimController, 'Trim / Package (e.g. Premium / Performance / Track)'),
                     const SizedBox(height: 14),
                     _buildTextField(
+                      _nicknameController,
+                      'Vehicle Nickname (optional - e.g. "The Beast", "Daily Driver")',
+                      prefixIcon: Icons.badge_outlined,
+                    ),
+                    const SizedBox(height: 14),
+                    _buildTextField(
                       _modsController,
                       'Installed Modifications (e.g. turbocharger, cat-back exhaust, coil-overs, ECU tune)',
                       maxLines: 3,
@@ -1184,7 +1208,12 @@ class _VehicleFormModalState extends State<_VehicleFormModal> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, {int maxLines = 1}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label, {
+    int maxLines = 1,
+    IconData? prefixIcon,
+  }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
@@ -1192,6 +1221,9 @@ class _VehicleFormModalState extends State<_VehicleFormModal> {
       scrollPadding: const EdgeInsets.only(bottom: 90, top: 20),
       decoration: InputDecoration(
         labelText: label,
+        prefixIcon: prefixIcon != null
+            ? Icon(prefixIcon, size: 18, color: Colors.white60)
+            : null,
         labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.38)),
         hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
       ),

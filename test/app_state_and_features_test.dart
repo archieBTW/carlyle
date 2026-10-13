@@ -56,6 +56,7 @@ void main() {
     test('Serialization and deserialization maintains all properties and images', () {
       final v = Vehicle(
         type: 'Motorcycle',
+        nickname: 'Red Bullet',
         year: '2022',
         make: 'Ducati',
         model: 'Panigale V4',
@@ -67,8 +68,25 @@ void main() {
 
       expect(restored.id, v.id);
       expect(restored.type, 'Motorcycle');
-      expect(restored.displayName, '2022 Ducati Panigale V4');
+      expect(restored.nickname, 'Red Bullet');
+      expect(restored.displayName, 'Red Bullet');
+      expect(restored.ymm, '2022 Ducati Panigale V4');
       expect(restored.imagesBase64.length, 1);
+    });
+
+    test('Vehicle displayName falls back to year make model when nickname is empty', () {
+      final vWithoutNick = Vehicle(
+        year: '2020',
+        make: 'Ford',
+        model: 'Mustang GT',
+      );
+      expect(vWithoutNick.nickname, isEmpty);
+      expect(vWithoutNick.displayName, '2020 Ford Mustang GT');
+      expect(vWithoutNick.ymm, '2020 Ford Mustang GT');
+
+      vWithoutNick.nickname = 'The Beast';
+      expect(vWithoutNick.displayName, 'The Beast');
+      expect(vWithoutNick.ymm, '2020 Ford Mustang GT');
     });
 
     test('Vehicle caches decoded image bytes for stable reference equality and flicker-free swiping', () {

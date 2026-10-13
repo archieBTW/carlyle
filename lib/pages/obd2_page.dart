@@ -75,12 +75,25 @@ class _Obd2PageState extends State<Obd2Page>
   Future<void> _runDtcScan() async {
     final codes = await widget.obd2service.scanDtcCodes();
     if (mounted) {
+      final mil = widget.obd2service.isMilOn;
+      final count = widget.obd2service.ecuDtcCount;
+      String msg;
+      Color bg;
+      if (codes.isNotEmpty) {
+        msg = 'Scan complete: Found ${codes.length} trouble code(s): ${codes.join(", ")}';
+        bg = Colors.orange;
+      } else if (mil) {
+        msg = 'ECU reports Check Engine Light is ON ($count fault(s) stored).';
+        bg = Colors.amber.shade800;
+      } else {
+        msg = 'Scan complete: No trouble codes (DTCs) found!';
+        bg = Colors.green;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(codes.isEmpty
-              ? 'Scan complete: No trouble codes (DTCs) found!'
-              : 'Scan complete: Found ${codes.length} trouble code(s): ${codes.join(", ")}'),
-          backgroundColor: codes.isEmpty ? Colors.green : Colors.orange,
+          content: Text(msg),
+          backgroundColor: bg,
         ),
       );
     }
@@ -480,78 +493,91 @@ class _Obd2PageState extends State<Obd2Page>
                         title: 'ENGINE SPEED',
                         unit: 'RPM',
                         accentColor: accent,
-                        size: 190,
+                        size: 175,
                       ),
 
                       // Speed Digital Display
-                      Column(
-                        children: [
-                          Text(
-                            'VEHICLE SPEED',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
-                              color: Colors.white.withValues(alpha: 0.6),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            (_speedInMph ? tel.speedMph : tel.speedKmh)
-                                .toStringAsFixed(0),
-                            style: const TextStyle(
-                              fontSize: 54,
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'monospace',
-                              color: Colors.white,
-                              height: 1.0,
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () => setState(() => _speedInMph = !_speedInMph),
-                            borderRadius: BorderRadius.circular(6),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: accent.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(6),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'VEHICLE SPEED',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                                color: Colors.white.withValues(alpha: 0.6),
                               ),
-                              child: Text(
-                                _speedInMph ? 'MPH' : 'KM/H',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: accent,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              (_speedInMph ? tel.speedMph : tel.speedKmh)
+                                  .toStringAsFixed(0),
+                              style: const TextStyle(
+                                fontSize: 50,
+                                fontWeight: FontWeight.w900,
+                                fontFamily: 'monospace',
+                                color: Colors.white,
+                                height: 1.0,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            InkWell(
+                              onTap: () => setState(() => _speedInMph = !_speedInMph),
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: accent.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          // Gear & Drive Indicator
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.05),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.tune, size: 14, color: accent),
-                                const SizedBox(width: 6),
-                                Text(
-                                  widget.appState.selectedVehicle.displayName,
-                                  style: const TextStyle(
-                                    fontSize: 11,
+                                child: Text(
+                                  _speedInMph ? 'MPH' : 'KM/H',
+                                  style: TextStyle(
+                                    fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white70,
+                                    color: accent,
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 10),
+                            // Gear & Drive Indicator / Vehicle Pill
+                            Container(
+                              constraints: const BoxConstraints(maxWidth: 135),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.05),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.tune, size: 13, color: accent),
+                                  const SizedBox(width: 5),
+                                  Flexible(
+                                    child: Text(
+                                      widget.appState.selectedVehicle.displayName,
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white70,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -873,6 +899,52 @@ class _Obd2PageState extends State<Obd2Page>
         ),
 
         const SizedBox(height: 18),
+
+        if (widget.obd2service.isMilOn) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF9100).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: const Color(0xFFFF9100).withValues(alpha: 0.5),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Color(0xFFFF9100), size: 26),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'CHECK ENGINE LIGHT ACTIVE',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.0,
+                          color: Color(0xFFFF9100),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.obd2service.ecuDtcCount > 0
+                            ? 'Vehicle ECU confirmed MIL is illuminated with ${widget.obd2service.ecuDtcCount} fault(s) stored.'
+                            : 'Vehicle instrument cluster MIL lamp is illuminated.',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
 
         // Active Trouble Codes Container
         Container(
