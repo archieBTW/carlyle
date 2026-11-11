@@ -164,14 +164,25 @@ class _AssistantPageState extends State<AssistantPage> {
     _scrollToBottom();
 
     final vehicle = widget.appState.selectedVehicle;
-    final nicknamePart = vehicle.nickname.isNotEmpty ? ' (Nickname: "${vehicle.nickname}")' : '';
-    final vehicleContext =
-        'Selected Vehicle: ${vehicle.type} - ${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.trim}$nicknamePart, Color: ${vehicle.color}. Installed Mods: ${vehicle.mods.isEmpty ? "Stock" : vehicle.mods}.';
-    final prompt = '$vehicleContext\n\nUser Question: $text';
+
+    // Auto-update default session title to user topic if generic
+    if (currentSession.title == 'Tuner Assistant' ||
+        RegExp(r'^Chat \d+').hasMatch(currentSession.title)) {
+      final cleanTitle = text.length > 28 ? '${text.substring(0, 28)}...' : text;
+      if (cleanTitle.isNotEmpty) {
+        currentSession.title = cleanTitle;
+      }
+    }
 
     String fullResponse = '';
     try {
-      await for (final chunk in widget.geminiService.askAssistantStream(prompt, imageBytes: image)) {
+      await for (final chunk in widget.geminiService.askAssistantStream(
+        text,
+        imageBytes: image,
+        history: currentSession.messages,
+        vehicle: vehicle,
+        recentDiagnosticReports: widget.appState.diagnosticReports,
+      )) {
         setState(() {
           _isLoading = false;
           fullResponse += chunk;

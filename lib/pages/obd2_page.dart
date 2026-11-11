@@ -199,8 +199,39 @@ class _Obd2PageState extends State<Obd2Page>
       builder: (_) => DiagnosticReportDialog(
         report: report,
         onDiscussWithAi: () {
-          // Add context message into active assistant chat session
+          // Add rich diagnostic context message into active assistant chat session
           final session = widget.appState.activeChatSession;
+          session.title = 'OBD2: ${report.dtcCodes.join(", ")}';
+
+          final diagSummary = report.diagnoses.map((d) {
+            final causes = d.commonCauses.isNotEmpty
+                ? '\n  Common causes: ${d.commonCauses.join(", ")}'
+                : '';
+            return '• **${d.code}** - ${d.title}:\n  ${d.carSpecificAnalysis}$causes';
+          }).join('\n\n');
+
+          final partsSummary = report.recommendedParts.isNotEmpty
+              ? '\n\n**Recommended Parts:**\n${report.recommendedParts.map((p) => '• ${p.partName} (${p.estimatedCost}) - Priority: ${p.priority}').join('\n')}'
+              : '';
+
+          final stepsSummary = report.troubleshootingSteps.isNotEmpty
+              ? '\n\n**Troubleshooting Steps:**\n${report.troubleshootingSteps.map((s) => '• Step ${s.stepNumber} [${s.difficulty}]: ${s.title} - ${s.action}').join('\n')}'
+              : '';
+
+          final costSummary =
+              '\n\n**Estimated Repair Costs:**\n• DIY: ${report.costEstimate.diyCost}\n• Independent Shop: ${report.costEstimate.independentShopCost}\n• Dealership: ${report.costEstimate.dealershipCost} (Est. Labor: ${report.costEstimate.estimatedLaborHours})';
+
+          final assistantContent =
+              'I\'ve reviewed your OBD2 scan report for **${report.vehicleName}**:\n\n'
+              '**Trouble Codes:** ${report.dtcCodes.join(", ")}\n'
+              '**Severity:** ${report.overallSeverity} (${report.canDrive ? "Vehicle is drivable with caution" : "DO NOT DRIVE - Risk of severe engine damage"})\n\n'
+              '**Diagnostic Summary:**\n${report.summary}\n\n'
+              '**Diagnoses:**\n$diagSummary'
+              '$partsSummary'
+              '$stepsSummary'
+              '$costSummary\n\n'
+              'What would you like to troubleshoot first, or what questions do you have about these codes and parts?';
+
           session.messages.add(ChatMessage(
             role: 'user',
             text:
@@ -208,8 +239,7 @@ class _Obd2PageState extends State<Obd2Page>
           ));
           session.messages.add(ChatMessage(
             role: 'assistant',
-            text:
-                'I have your OBD2 diagnostic report for ${report.dtcCodes.join(", ")} on your ${report.vehicleName}. Overall severity is ${report.overallSeverity}. What questions do you have about the repair steps or parts?',
+            text: assistantContent,
           ));
           widget.appState.saveChatSessions();
           if (widget.onSwitchToAssistant != null) {

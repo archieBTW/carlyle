@@ -1,4 +1,4 @@
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:google_generative_ai/google_generative_ai.dart' hide ChatSession;
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -7,40 +7,222 @@ import 'models.dart';
 class GeminiService {
   final String apiKey;
   late final GenerativeModel _model;
-  late final GenerativeModel _visionModel;
 
   GeminiService(this.apiKey) {
     _model = GenerativeModel(
       model: 'gemini-3.5-flash-lite',
       apiKey: apiKey,
     );
-    _visionModel = GenerativeModel(
-      model: 'gemini-3.8-flash',
-      apiKey: apiKey,
-    );
   }
 
-  Stream<String> askAssistantStream(String prompt, {Uint8List? imageBytes}) async* {
+  Stream<String> askAssistantStream(
+    String prompt, {
+    Uint8List? imageBytes,
+    List<ChatMessage>? history,
+    Vehicle? vehicle,
+    List<Obd2DiagnosticReport>? recentDiagnosticReports,
+  }) async* {
     try {
-      if (imageBytes != null) {
-        final content = [
-          Content.multi([
-            TextPart(prompt),
-            DataPart('image/jpeg', imageBytes),
-          ])
-        ];
-        await for (final chunk in _visionModel.generateContentStream(content)) {
-          if (chunk.text != null) yield chunk.text!;
-        }
-      } else {
-        final content = [Content.text(prompt)];
-        await for (final chunk in _model.generateContentStream(content)) {
-          if (chunk.text != null) yield chunk.text!;
-        }
+      final systemText = buildSystemInstruction(
+        vehicle: vehicle,
+        diagnosticReports: recentDiagnosticReports,
+      );
+
+      final contents = formatChatHistory(
+        history: history ?? [],
+        currentPrompt: prompt,
+        currentImageBytes: imageBytes,
+      );
+
+      final hasImages = contents.any((c) => c.parts.any((p) => p is DataPart));
+
+      final model = GenerativeModel(
+        model: hasImages ? 'gemini-3.8-flash' : 'gemini-3.5-flash-lite',
+        apiKey: apiKey,
+        systemInstruction: Content.system(systemText),
+      );
+
+      await for (final chunk in model.generateContentStream(contents)) {
+        if (chunk.text != null) yield chunk.text!;
       }
     } catch (e) {
       yield 'Error: $e';
     }
+  }
+
+  static String buildSystemInstruction({
+    Vehicle? vehicle,
+    List<Obd2DiagnosticReport>? diagnosticReports,
+  }) {
+    final sb = StringBuffer();
+    sb.writeln(
+      'You are AI Tuner, a master ASE-certified automotive diagnostic technician, dyno tuner, and powertrain specialist.\n'
+      'You provide technical, safety-conscious, and accurate advice for vehicle performance modifications, OBD2 diagnostic trouble codes (DTCs), troubleshooting, and repair estimates.\n'
+      'CRITICAL: You MUST maintain and remember the complete context of the conversation across multiple turns. When the user asks follow-up questions about a code, part, step, or repair, refer directly back to the previously discussed trouble codes, symptoms, and recommendations.\n'
+    );
+
+    if (vehicle != null) {
+      sb.writeln('=== ACTIVE VEHICLE PROFILE ===');
+      sb.writeln('Type: ${vehicle.type}');
+      sb.writeln('Year/Make/Model: ${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.trim}'.trim());
+      if (vehicle.nickname.isNotEmpty) sb.writeln('Nickname: "${vehicle.nickname}"');
+      if (vehicle.color.isNotEmpty) sb.writeln('Color: ${vehicle.color}');
+      sb.writeln('Current Modifications: ${vehicle.mods.trim().isEmpty ? "Stock (No aftermarket mods installed)" : vehicle.mods}');
+
+      if (vehicle.cachedSpecs != null) {
+        final stock = vehicle.cachedSpecs!['stock'];
+        final modded = vehicle.cachedSpecs!['modded'];
+        if (stock is Map) {
+          sb.writeln('Engine: ${stock['engine'] ?? "Standard OEM"}');
+          sb.writeln('Drivetrain: ${stock['drivetrain'] ?? "Standard"}');
+          sb.writeln('Stock Output: ${stock['horsepower'] ?? ""} / ${stock['torque'] ?? ""}');
+        }
+        if (modded is Map && modded['horsepower'] != null) {
+          sb.writeln('Modded Output Estimate: ${modded['horsepower']} / ${modded['torque']}');
+        }
+      }
+      sb.writeln();
+    }
+
+    final reports = diagnosticReports?.where((r) =>
+      vehicle == null || r.vehicleId == vehicle.id || r.vehicleName == vehicle.displayName
+    ).toList();
+
+    if (reports != null && reports.isNotEmpty) {
+      sb.writeln('=== ACTIVE SCANNED OBD2 TROUBLE CODES & DIAGNOSTICS ===');
+      for (final rep in reports.take(3)) {
+        sb.writeln('• Scanned DTCs: ${rep.dtcCodes.join(", ")}');
+        sb.writeln('  Severity: ${rep.overallSeverity} | Driveable: ${rep.canDrive ? "Yes (Drive with caution)" : "NO - Risk of Engine Damage"}');
+        sb.writeln('  Summary: ${rep.summary}');
+        for (final d in rep.diagnoses) {
+          sb.writeln('  - Code ${d.code} (${d.title}): ${d.carSpecificAnalysis}');
+          if (d.commonCauses.isNotEmpty) {
+            sb.writeln('    Common Causes: ${d.commonCauses.join("; ")}');
+          }
+        }
+        if (rep.recommendedParts.isNotEmpty) {
+          sb.writeln('  - Recommended Parts: ${rep.recommendedParts.map((p) => "${p.partName} (${p.estimatedCost})").join(", ")}');
+        }
+        if (rep.troubleshootingSteps.isNotEmpty) {
+          sb.writeln('  - Troubleshooting Steps: ${rep.troubleshootingSteps.map((s) => "Step ${s.stepNumber} [${s.difficulty}]: ${s.title} (${s.action})").join("; ")}');
+        }
+        sb.writeln('  - Repair Costs: DIY ${rep.costEstimate.diyCost}, Shop ${rep.costEstimate.independentShopCost}, Dealer ${rep.costEstimate.dealershipCost}');
+      }
+      sb.writeln();
+    }
+
+    sb.writeln(
+      'CONVERSATION AND FOLLOW-UP GUIDELINES:\n'
+      '1. Context Retention: Always remember previously discussed trouble codes, symptoms, parts, and vehicles. Never ask the user to repeat the code if it was already mentioned or scanned above.\n'
+      '2. Follow-ups: If the user asks a follow-up like "What should I check first?", "How much does that cost to fix?", "Can I still drive it?", or "What caused that code?", answer immediately referencing the active code(s) and vehicle.\n'
+      '3. Actionable Advice: Provide concrete, step-by-step diagnostic and mechanical advice, including necessary tools and torque/safety precautions.\n'
+      '4. Safety First: If severe misfires (flashing CEL) or extreme lean conditions exist, warn against driving to prevent catalytic converter melting or piston damage.'
+    );
+
+    return sb.toString().trim();
+  }
+
+  static List<Content> formatChatHistory({
+    required List<ChatMessage> history,
+    String? currentPrompt,
+    Uint8List? currentImageBytes,
+    int maxTurns = 40,
+  }) {
+    final contents = <Content>[];
+
+    // Filter out empty messages (such as the assistant placeholder currently being streamed)
+    final validMessages = history.where((m) {
+      final hasText = m.text.trim().isNotEmpty;
+      final hasImage = m.imageBase64 != null && m.imageBase64!.isNotEmpty;
+      return hasText || hasImage;
+    }).toList();
+
+    for (final msg in validMessages) {
+      final isUser = msg.role == 'user';
+      final role = isUser ? 'user' : 'model';
+      final parts = <Part>[];
+
+      if (msg.imageBytes != null) {
+        parts.add(DataPart('image/jpeg', msg.imageBytes!));
+      }
+      if (msg.text.trim().isNotEmpty) {
+        parts.add(TextPart(msg.text.trim()));
+      }
+
+      if (parts.isEmpty) continue;
+
+      // Gemini requirement: The first turn must be 'user'
+      if (contents.isEmpty && role != 'user') {
+        continue; // Skip leading greeting or model message
+      }
+
+      // Gemini requirement: Strict alternation between 'user' and 'model'
+      if (contents.isNotEmpty && contents.last.role == role) {
+        final prevParts = contents.last.parts;
+        contents[contents.length - 1] = Content(role, [...prevParts, ...parts]);
+      } else {
+        contents.add(Content(role, parts));
+      }
+    }
+
+    // If currentPrompt is non-empty and wasn't already the last user message in history
+    if (currentPrompt != null && currentPrompt.trim().isNotEmpty) {
+      final promptText = currentPrompt.trim();
+      final hasCurrentInLast = contents.isNotEmpty &&
+          contents.last.role == 'user' &&
+          contents.last.parts.any((p) => p is TextPart && p.text == promptText);
+
+      if (!hasCurrentInLast) {
+        final parts = <Part>[];
+        if (currentImageBytes != null) {
+          parts.add(DataPart('image/jpeg', currentImageBytes));
+        }
+        parts.add(TextPart(promptText));
+
+        if (contents.isNotEmpty && contents.last.role == 'user') {
+          final prevParts = contents.last.parts;
+          contents[contents.length - 1] = Content('user', [...prevParts, ...parts]);
+        } else {
+          contents.add(Content('user', parts));
+        }
+      }
+    }
+
+    // Ensure currentImageBytes is included in the last user turn if not already present
+    if (currentImageBytes != null && contents.isNotEmpty && contents.last.role == 'user') {
+      final hasImageData = contents.last.parts.any((p) => p is DataPart);
+      if (!hasImageData) {
+        contents[contents.length - 1] = Content('user', [
+          DataPart('image/jpeg', currentImageBytes),
+          ...contents.last.parts,
+        ]);
+      }
+    }
+
+    // Fallback: If contents is still empty, create an initial user turn
+    if (contents.isEmpty) {
+      final parts = <Part>[];
+      if (currentImageBytes != null) {
+        parts.add(DataPart('image/jpeg', currentImageBytes));
+      }
+      parts.add(TextPart(
+          (currentPrompt != null && currentPrompt.trim().isNotEmpty)
+              ? currentPrompt.trim()
+              : 'Hello'));
+      contents.add(Content('user', parts));
+    }
+
+    // Bound to maxTurns to prevent token limits on very long sessions
+    var boundedContents = contents;
+    if (boundedContents.length > maxTurns) {
+      boundedContents = boundedContents.sublist(boundedContents.length - maxTurns);
+      // Ensure trimmed list starts with 'user'
+      while (boundedContents.isNotEmpty && boundedContents.first.role != 'user') {
+        boundedContents.removeAt(0);
+      }
+    }
+
+    return boundedContents;
   }
 
   Future<String> generateMockupPrompt(
