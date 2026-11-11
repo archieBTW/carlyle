@@ -79,7 +79,7 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final bytes = Uint8List.fromList(utf8.encode(jsonText));
       final dateStr = DateTime.now().toIso8601String().split('T').first;
-      final defaultFileName = 'ai_tuner_backup_$dateStr.json';
+      final defaultFileName = 'carlyle_backup_$dateStr.json';
 
       final saveUri = await FilePickerPlatform.instance.saveFile(
         dialogTitle: 'Save Backup JSON File',
@@ -125,7 +125,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final accent = widget.appState.accentColor;
     try {
       final dateStr = DateTime.now().toIso8601String().split('T').first;
-      final fileName = 'ai_tuner_backup_$dateStr.json';
+      final fileName = 'carlyle_backup_$dateStr.json';
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsString(jsonText, flush: true);
@@ -137,8 +137,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
       final result = await SharePlus.instance.share(
         ShareParams(
-          text: 'AI Tuner vehicle and preferences backup JSON file',
-          subject: 'AI Tuner Backup ($dateStr)',
+          text: 'Carlyle vehicle and preferences backup JSON file',
+          subject: 'Carlyle Backup ($dateStr)',
           files: [XFile(file.path, mimeType: 'application/json', name: fileName)],
           sharePositionOrigin: sharePositionOrigin,
         ),
@@ -541,7 +541,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                   scrollPadding: const EdgeInsets.only(bottom: 90, top: 20),
                                   decoration: InputDecoration(
                                     labelText: 'Backup JSON content',
-                                    hintText: '{\n  "app": "AI_TUNER",\n  ...\n}',
+                                    hintText: '{\n  "app": "CARLYLE",\n  ...\n}',
                                     alignLabelWithHint: true,
                                     labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.38)),
                                     hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
@@ -655,7 +655,7 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 32),
           Center(
             child: Text(
-              'AI Tuner v2.0 • Powered by Gemini 3.5 & 3.1 Flash Image',
+              'Carlyle v2.0 • Powered by Gemini 3.5 & 3.1 Flash Image',
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontSize: 12,
                 color: isDark ? Colors.white38 : Colors.black38,

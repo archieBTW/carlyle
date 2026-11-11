@@ -28,7 +28,7 @@ class AITunerApp extends StatelessWidget {
       listenable: appState,
       builder: (context, _) {
         return MaterialApp(
-          title: 'AI Tuner',
+          title: 'Carlyle',
           theme: AppTheme.buildLightTheme(accentColor: appState.accentColor),
           darkTheme: AppTheme.buildDarkTheme(accentColor: appState.accentColor),
           themeMode: appState.themeMode,
@@ -88,7 +88,7 @@ class _MainScreenState extends State<MainScreen> {
         return BlurredDialog(
           dismissible: false,
           child: AlertDialog(
-            title: const Text('Welcome to AI Tuner'),
+            title: const Text('Welcome to Carlyle'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,7 +162,7 @@ class _MainScreenState extends State<MainScreen> {
             children: [
               CircularProgressIndicator(color: accent),
               const SizedBox(height: 16),
-              const Text('Connecting to AI Tuner...'),
+              const Text('Connecting to Carlyle...'),
             ],
           ),
         ),
@@ -197,7 +197,7 @@ class _MainScreenState extends State<MainScreen> {
           [
             'My Garage',
             'OBD-II Live & AI Diagnostics',
-            'AI Tuner Assistant',
+            'Carlyle Assistant',
             'Mockup Studio'
           ][_currentIndex],
           style: TextStyle(

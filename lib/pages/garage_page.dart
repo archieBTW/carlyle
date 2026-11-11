@@ -543,7 +543,7 @@ class _VehicleCarouselCardState extends State<_VehicleCarouselCard>
                         foregroundColor: isDark ? Colors.white70 : const Color(0xFF334155),
                       ),
                       icon: const Icon(Icons.radio_button_unchecked, size: 14),
-                      label: const Text('Select for AI', style: TextStyle(fontSize: 12)),
+                      label: const Text('Select', style: TextStyle(fontSize: 12)),
                       onPressed: widget.onSelectForAi,
                     ),
                 ],

@@ -56,7 +56,7 @@ class GeminiService {
   }) {
     final sb = StringBuffer();
     sb.writeln(
-      'You are AI Tuner, a master ASE-certified automotive diagnostic technician, dyno tuner, and powertrain specialist.\n'
+      'You are Carlyle, a master ASE-certified automotive diagnostic technician, dyno tuner, and powertrain specialist.\n'
       'You provide technical, safety-conscious, and accurate advice for vehicle performance modifications, OBD2 diagnostic trouble codes (DTCs), troubleshooting, and repair estimates.\n'
       'CRITICAL: You MUST maintain and remember the complete context of the conversation across multiple turns. When the user asks follow-up questions about a code, part, step, or repair, refer directly back to the previously discussed trouble codes, symptoms, and recommendations.\n'
     );

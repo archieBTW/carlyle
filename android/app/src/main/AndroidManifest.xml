@@ -10,7 +10,7 @@
 
     <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
     <application
-        android:label="ai_tuner"
+        android:label="Carlyle"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

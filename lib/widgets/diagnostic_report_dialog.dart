@@ -27,7 +27,7 @@ class DiagnosticReportDialog extends StatelessWidget {
 
   void _shareReport() {
     final sb = StringBuffer();
-    sb.writeln('🚗 AI TUNER DIAGNOSTIC REPORT');
+    sb.writeln('🚗 CARLYLE DIAGNOSTIC REPORT');
     sb.writeln('Vehicle: ${report.vehicleName}');
     sb.writeln('Date: ${report.timestamp.toLocal()}');
     sb.writeln('DTC Codes: ${report.dtcCodes.join(", ")}');

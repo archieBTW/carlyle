@@ -702,7 +702,7 @@ class AppState extends ChangeNotifier {
           ChatMessage(
             role: 'assistant',
             text:
-                'Hey there! I am your AI Tuner. How can I help you with your ${selectedVehicle.displayName} today? You can ask for mod recommendations, upload pictures for diagnostics, or switch to voice mode!',
+                'Hey there! I am Carlyle. How can I help you with your ${selectedVehicle.displayName} today? You can ask for mod recommendations, upload pictures for diagnostics, or switch to voice mode!',
           ),
         ],
       );
@@ -1024,7 +1024,7 @@ class AppState extends ChangeNotifier {
 
   String exportToJson() {
     final data = {
-      'app': 'AI_TUNER',
+      'app': 'CARLYLE',
       'version': 1,
       'exportedAt': DateTime.now().toIso8601String(),
       'apiKey': apiKey,

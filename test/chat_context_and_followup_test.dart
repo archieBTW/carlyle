@@ -108,7 +108,7 @@ void main() {
       );
 
       // Verify persona and critical context instruction
-      expect(sysText, contains('AI Tuner'));
+      expect(sysText, contains('Carlyle'));
       expect(sysText, contains('CRITICAL: You MUST maintain and remember the complete context'));
 
       // Verify active vehicle details
@@ -137,7 +137,7 @@ void main() {
       final messages = [
         ChatMessage(
           role: 'assistant',
-          text: 'Hey there! I am your AI Tuner. How can I help you today?',
+          text: 'Hey there! I am Carlyle. How can I help you today?',
         ),
         ChatMessage(
           role: 'user',
